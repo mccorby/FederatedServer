@@ -2,7 +2,7 @@ package com.mccorby.federatedlearning.server;
 
 
 import com.mccorby.federatedlearning.server.core.domain.model.FederatedModel;
-import org.apache.commons.io.IOUtils;
+import com.mccorby.federatedlearning.server.core.domain.model.GradientStrategy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -10,7 +10,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -24,17 +23,21 @@ public class FederatedServerImpl implements FederatedServer {
     private static FederatedServerImpl sInstance;
     private List<FederatedModel> registeredModels;
     private INDArray averageFlattenGradient;
+    private GradientStrategy strategy;
     private Logger logger;
+    private int models;
 
     public static FederatedServerImpl getInstance() {
         if (sInstance == null) {
-            sInstance = new FederatedServerImpl(message -> System.out.println(message));
+            Logger logger = System.out::println;
+            sInstance = new FederatedServerImpl(new AverageGradientStrategy(logger), logger);
         }
 
         return sInstance;
     }
 
-    private FederatedServerImpl(Logger logger) {
+    private FederatedServerImpl(GradientStrategy strategy, Logger logger) {
+        this.strategy = strategy;
         this.logger = logger;
     }
 
@@ -49,29 +52,11 @@ public class FederatedServerImpl implements FederatedServer {
 
 
     private void processGradient(INDArray gradient) {
-        // Doing a very simple and not correct average
-        // In real life, we would keep a map with the gradients sent by each model
-        // This way we could remove outliers
-        if (averageFlattenGradient == null) {
-            averageFlattenGradient = gradient;
-        } else {
-            if (Arrays.equals(averageFlattenGradient.shape(), gradient.shape())) {
-                logger.log("Updating average gradient");
-                averageFlattenGradient = averageFlattenGradient.add(gradient).div(2);
-            } else {
-                logger.log("Gradients had different shapes");
-            }
-        }
-        logger.log("Average Gradient " + averageFlattenGradient);
+        averageFlattenGradient = strategy.processGradient(averageFlattenGradient, gradient);
     }
 
     @Override
     public byte[] sendUpdatedGradient() {
-//        for (FederatedModel model: registeredModels) {
-//            model.updateWeights(averageFlattenGradient);
-//            logger.log("Updating gradient for " + model.getId());
-//            model.updateWeights(averageGradient);
-//        }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
             Nd4j.write(outputStream, averageFlattenGradient);
@@ -85,6 +70,7 @@ public class FederatedServerImpl implements FederatedServer {
     public void pushGradient(byte[] clientGradient) {
         logger.log("Gradient received " + (clientGradient != null ? clientGradient.toString() : "null"));
         try {
+            assert clientGradient != null;
             INDArray gradient = Nd4j.fromByteArray(clientGradient);
             processGradient(gradient);
         } catch (IOException e) {
@@ -101,5 +87,10 @@ public class FederatedServerImpl implements FederatedServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public Integer registerNewModel() {
+        return ++models;
     }
 }

@@ -15,6 +15,12 @@ public class RestService {
         return "yes";
     }
 
+    @GET
+    @Path(("/register"))
+    public Integer register() {
+        return FederatedServerImpl.getInstance().registerNewModel();
+    }
+
     @POST
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     @Path("/gradient")

@@ -11,4 +11,6 @@ public interface FederatedServer {
     byte[] sendUpdatedGradient();
 
     void pushGradient(InputStream is);
+
+    Integer registerNewModel();
 }
