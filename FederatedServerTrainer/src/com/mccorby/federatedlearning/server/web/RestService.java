@@ -18,7 +18,7 @@ public class RestService {
     @GET
     @Path(("/register"))
     public Integer register() {
-        return FederatedServerImpl.getInstance().registerNewModel();
+        return FederatedServerImpl.getInstance().registerModel(null);
     }
 
     @POST

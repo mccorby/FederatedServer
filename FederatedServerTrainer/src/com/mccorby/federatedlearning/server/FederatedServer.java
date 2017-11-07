@@ -6,11 +6,9 @@ import java.io.InputStream;
 
 public interface FederatedServer {
 
-    void registerModel(FederatedModel model);
+    Integer registerModel(FederatedModel model);
 
     byte[] sendUpdatedGradient();
 
     void pushGradient(InputStream is);
-
-    Integer registerNewModel();
 }

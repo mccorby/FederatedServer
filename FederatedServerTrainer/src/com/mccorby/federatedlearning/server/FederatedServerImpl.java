@@ -42,12 +42,15 @@ public class FederatedServerImpl implements FederatedServer {
     }
 
     @Override
-    public void registerModel(FederatedModel model) {
+    public Integer registerModel(FederatedModel model) {
         // This is only for Push notifications of changes to the gradients
         if (registeredModels == null) {
             registeredModels = new ArrayList<>();
         }
-        registeredModels.add(model);
+        if (model != null) {
+            registeredModels.add(model);
+        }
+        return ++models;
     }
 
 
@@ -87,10 +90,5 @@ public class FederatedServerImpl implements FederatedServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    @Override
-    public Integer registerNewModel() {
-        return ++models;
     }
 }
